@@ -1,60 +1,30 @@
 let prevPosition = null;
 let speedValues = [];
 
-function calculateInstantaneousSpeed(currentPosition, prevPosition) {
-    if (!prevPosition) {
-        return 0;
-    }
+// ページが読み込まれた後に実行される関数
+window.addEventListener('DOMContentLoaded', function() {
+    // ページ上のどこかをタップしたときに警告音を再生する
+    document.body.addEventListener('click', function() {
+        playWarningSound();
+    });
+});
 
-    const timeDiff = (currentPosition.timestamp - prevPosition.timestamp) / 1000; // Convert to seconds
-    const distance = getDistance(prevPosition.coords, currentPosition.coords);
+// 警告音を再生する関数
+function playWarningSound() {
+    const speed = calculateInstantaneousSpeed(pos, prevPosition);
+    const targetSpeed = parseFloat(sessionStorage.getItem('runningSpeed')) || 0;
+    const smoothedSpeed = calculateSmoothedSpeed(speed);
 
-    // Calculate speed in km/h
-    const speed = distance / timeDiff * 3600;
-    return speed;
-}
-
-function getDistance(coords1, coords2) {
-    const R = 6371; // Earth radius in km
-    const dLat = deg2rad(coords2.latitude - coords1.latitude);
-    const dLon = deg2rad(coords2.longitude - coords1.longitude);
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(coords1.latitude)) * Math.cos(deg2rad(coords2.latitude)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Distance in km
-    return distance;
-}
-
-function deg2rad(deg) {
-    return deg * (Math.PI / 180);
-}
-
-function calculateSmoothedSpeed(speed) {
-    const windowSize = 10; // 移動平均のウィンドウサイズ
-    speedValues.push(speed);
-
-    if (speedValues.length > windowSize) {
-        speedValues.shift(); // 配列の先頭から削除してウィンドウサイズを維持
-    }
-
-    const averageSpeed = speedValues.reduce((acc, val) => acc + val, 0) / speedValues.length;
-    return averageSpeed;
-}
-
-function playWarningSound(smoothedSpeed, targetSpeed) {
+    // 速度が目標速度から4km/h離れている場合のみ警告音を再生
     if (Math.abs(smoothedSpeed - targetSpeed) !== 4) {
-        document.getElementById('warningAudio').play().catch(function(error) {
-            console.error('警告音の再生に失敗しました:', error);
-        }); // 速度が目標速度から4km/h離れている場合のみ警告音を再生
-    }
-}
-
-function stopWarningSound(smoothedSpeed, targetSpeed) {
-    if (Math.abs(smoothedSpeed - targetSpeed) === 4) {
-        document.getElementById('warningAudio').pause(); // 速度が目標速度から4km/h離れている場合のみ警告音を停止
-        document.getElementById('warningAudio').currentTime = 0;
+        // 警告音の<audio>要素を取得する
+        const warningAudio = document.getElementById('warningAudio');
+        // 警告音が停止中の場合、再生を開始する
+        if (warningAudio.paused) {
+            warningAudio.play().catch(function(error) {
+                console.error('警告音の再生に失敗しました:', error);
+            });
+        }
     }
 }
 
@@ -62,8 +32,7 @@ function success(pos) {
     const speed = calculateInstantaneousSpeed(pos, prevPosition);
     prevPosition = pos;
 
-    const targetSpeed = parseFloat(sessionStorage.getItem('runningSpeed')) || 0;
-    const smoothedSpeed = calculateSmoothedSpeed(speed); // smoothedSpeedの宣言
+    const smoothedSpeed = calculateSmoothedSpeed(speed);
 
     const speedInfo = document.getElementById('speedInfo');
     speedInfo.textContent = `現在の移動速度: ${smoothedSpeed.toFixed(2)} km/h`;
@@ -84,9 +53,8 @@ function success(pos) {
     const currentSpeedResult = document.getElementById('currentSpeedResult');
     currentSpeedResult.textContent = `現在の速度: ${smoothedSpeed.toFixed(2)} km/h`;
 
-    // 警告音の再生・停止
-    playWarningSound(smoothedSpeed, targetSpeed);
-    stopWarningSound(smoothedSpeed, targetSpeed);
+    // 警告音の再生
+    playWarningSound(smoothedSpeed);
 }
 
 function fail(error) {
