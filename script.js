@@ -1,6 +1,5 @@
 let prevPosition = null;
 let speedValues = [];
-let warningAudio = document.getElementById('warningAudio'); // 警告音のaudio要素
 
 function calculateInstantaneousSpeed(currentPosition, prevPosition) {
     if (!prevPosition) {
@@ -46,7 +45,7 @@ function calculateSmoothedSpeed(speed) {
 
 function playWarningSound(smoothedSpeed, targetSpeed) {
     if (Math.abs(smoothedSpeed - targetSpeed) !== 4) {
-        warningAudio.play().catch(function(error) {
+        document.getElementById('warningAudio').play().catch(function(error) {
             console.error('警告音の再生に失敗しました:', error);
         }); // 速度が目標速度から4km/h離れている場合のみ警告音を再生
     }
@@ -54,8 +53,8 @@ function playWarningSound(smoothedSpeed, targetSpeed) {
 
 function stopWarningSound(smoothedSpeed, targetSpeed) {
     if (Math.abs(smoothedSpeed - targetSpeed) === 4) {
-        warningAudio.pause(); // 速度が目標速度から4km/h離れている場合のみ警告音を停止
-        warningAudio.currentTime = 0;
+        document.getElementById('warningAudio').pause(); // 速度が目標速度から4km/h離れている場合のみ警告音を停止
+        document.getElementById('warningAudio').currentTime = 0;
     }
 }
 
